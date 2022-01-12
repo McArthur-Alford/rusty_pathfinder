@@ -1,0 +1,45 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug executable 'rpg_modifiers'",
+            "cargo": {
+                "args": [
+                    "build",
+                    "--bin=rpg_modifiers",
+                    "--package=rpg_modifiers"
+                ],
+                "filter": {
+                    "name": "rpg_modifiers",
+                    "kind": "bin"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in executable 'rpg_modifiers'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--bin=rpg_modifiers",
+                    "--package=rpg_modifiers"
+                ],
+                "filter": {
+                    "name": "rpg_modifiers",
+                    "kind": "bin"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        }
+    ]
+}
