@@ -8,3 +8,4 @@ edition = "2021"
 [dependencies]
 specs = "0.17.0"
 ruscii = "0.3"
+rand = "0.8.4"

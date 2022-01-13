@@ -61,104 +61,35 @@ impl Data for Health {}
 
 // Ability Scores
 
-pub struct Strength {
+pub struct AbilityScore {
     base_score: i32,
     effective_score: i32,
-    modifier: i32,
+    modifier: i32
 }
-
-impl Strength {
-    fn default() -> Strength {
-        Strength {
+impl AbilityScore {
+    fn default() -> AbilityScore {
+        AbilityScore {
             base_score: 0,
             effective_score: 0,
-            modifier: 0,
+            modifier: 0
         }
     }
 }
+
+pub struct Strength(AbilityScore);
 impl Data for Strength {}
 
-pub struct Dexterity {
-    base_score: i32,
-    effective_score: i32,
-    modifier: i32,
-}
-
-impl Dexterity {
-    fn default() -> Dexterity {
-        Dexterity {
-            base_score: 0,
-            effective_score: 0,
-            modifier: 0,
-        }
-    }
-}
+pub struct Dexterity(AbilityScore);
 impl Data for Dexterity {}
 
-pub struct Constitution {
-    base_score: i32,
-    effective_score: i32,
-    modifier: i32,
-}
-
-impl Constitution {
-    fn default() -> Constitution {
-        Constitution {
-            base_score: 0,
-            effective_score: 0,
-            modifier: 0,
-        }
-    }
-}
+pub struct Constitution(AbilityScore);
 impl Data for Constitution {}
 
-pub struct Wisdom {
-    base_score: i32,
-    effective_score: i32,
-    modifier: i32,
-}
-
-impl Wisdom {
-    fn default() -> Wisdom {
-        Wisdom {
-            base_score: 0,
-            effective_score: 0,
-            modifier: 0,
-        }
-    }
-}
-impl Data for Wisdom {}
-
-pub struct Intelligence {
-    base_score: i32,
-    effective_score: i32,
-    modifier: i32,
-}
-
-impl Intelligence {
-    fn default() -> Intelligence {
-        Intelligence {
-            base_score: 0,
-            effective_score: 0,
-            modifier: 0,
-        }
-    }
-}
+pub struct Intelligence(AbilityScore);
 impl Data for Intelligence {}
 
-pub struct Charisma {
-    base_score: i32,
-    effective_score: i32,
-    modifier: i32,
-}
-
-impl Charisma {
-    fn default() -> Charisma {
-        Charisma {
-            base_score: 0,
-            effective_score: 0,
-            modifier: 0,
-        }
-    }
-}
+pub struct Charisma(AbilityScore);
 impl Data for Charisma {}
+
+pub struct Wisdom(AbilityScore);
+impl Data for Wisdom {}
