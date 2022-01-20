@@ -1,5 +1,3 @@
-use std::{borrow::BorrowMut, time::Duration};
-
 use hecs::World;
 
 use crate::{document::Document, time::{EffectDuration, WorldTime}, data_character::Health};
@@ -80,7 +78,7 @@ impl Effect for FastHealing {
     }
 
     fn update(&self, document: &mut Document) {
-        for (id, (health,)) in document.0.query_mut::<(&mut Health,)>() {
+        for (_id, (health,)) in document.0.query_mut::<(&mut Health,)>() {
             health.current_health += self.0;
         }
     }
