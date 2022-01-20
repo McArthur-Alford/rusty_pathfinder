@@ -3,22 +3,32 @@
 use crate::data::*;
 use crate::dice::*;
 use crate::effects::*;
+use crate::time::*;
 use specs::prelude::*;
 use std::time::*;
 
 mod data;
 mod dice;
 mod effects;
+mod time;
 
 fn main() {
     let mut world = World::new();
     world.register::<DataSheetComponent>();
     world.register::<EffectComponent>();
 
+    world.insert(WorldTime::default());
+
     world
         .create_entity()
         .with(DataSheetComponent::new().with(Box::new(Health(5))))
-        .with(EffectComponent::new().with(Box::new(FastHealing(5))))
+        .with(EffectComponent::new().with(
+            Box::new(FastHealing(5)),
+            EffectDuration::Seconds {
+                start: std::time::Duration::new(0, 0),
+                duration: std::time::Duration::from_secs(3),
+            },
+        ))
         .build();
 
     let mut dispatcher = DispatcherBuilder::new()
@@ -26,30 +36,14 @@ fn main() {
         .with(DebugSystem, "DebugSystem", &[])
         .build();
 
-    dispatcher.setup(&mut world);
-
-    for i in 0..5 {
-        let tick_time = Instant::now();
-        println!("\nGame Tick: {}", i);
+    for i in 0..100 {
         dispatcher.dispatch(&mut world);
-        let duration = tick_time.elapsed();
-        println!("Tick Lasted {} microseconds", duration.as_micros());
+
+        std::thread::sleep(Duration::from_millis(100));
+
+        println!("{:?}", world.fetch_mut::<WorldTime>().passed);
+        world.fetch_mut::<WorldTime>().real_time_tick();
     }
-
-    println!("");
-
-    let dm = DiceManager;
-    println!(
-        "Range Test: {} \nD(20) test {}, \nPercentile test {}\n",
-        dm.roll(Dice::Range(0..2)),
-        dm.roll(Dice::D(20)),
-        dm.roll(Dice::Percentile)
-    );
-
-    println!("DC10 flat check result: {:?}", dm.check(Dice::D(20), 10));
-    println!("DC10 flat check result: {:?}", dm.check(Dice::D(20), 10));
-    println!("DC5 flat check result: {:?}", dm.check(Dice::D(20), 5));
-    println!("DC5 flat check result: {:?}", dm.check(Dice::D(20), 5));
 }
 
 pub struct DebugSystem;

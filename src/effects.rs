@@ -1,10 +1,12 @@
-use crate::data::*;
-use specs::{Component, Join, System, VecStorage, WriteStorage};
+use std::time::Duration;
+
+use crate::{data::*, time::{EffectDuration, WorldTime}};
+use specs::{Component, Join, System, VecStorage, WriteStorage, shred::Resource, WorldExt, Read};
 
 // EffectComponent Implementation:
 
 pub struct EffectComponent {
-    pub effects: Vec<Box<dyn Effect + Send + Sync>>,
+    pub effects: Vec<(Box<dyn Effect + Send + Sync>, EffectDuration)>,
 }
 
 impl EffectComponent {
@@ -14,8 +16,8 @@ impl EffectComponent {
         }
     }
 
-    pub fn with(mut self, effect: Box<dyn Effect + Send + Sync>) -> Self {
-        self.effects.push(effect);
+    pub fn with(mut self, effect: Box<dyn Effect + Send + Sync>, duration: EffectDuration) -> Self {
+        self.effects.push((effect, duration));
         self
     }
 }
@@ -46,15 +48,24 @@ impl<'a> System<'a> for EffectSystem {
     type SystemData = (
         WriteStorage<'a, DataSheetComponent>,
         WriteStorage<'a, EffectComponent>,
+        Read<'a, WorldTime>
     );
 
-    fn run(&mut self, (mut datasheet, mut effects): Self::SystemData) {
+    fn run(&mut self, (mut datasheet, mut effects, time): Self::SystemData) {
         for (datasheet, effects) in (&mut datasheet, &mut effects).join() {
             let mut stage = 0;
             while stage < StageOrder.len() {
                 effects.effects.iter_mut().for_each(|x| {
-                    if x.ready(&StageOrder[stage]) {
-                        x.update(datasheet);
+                    match x.1 {
+                        EffectDuration::Permenant => (),
+                        EffectDuration::Seconds { start, duration } => {
+                            if start + duration < time.passed {
+                                drop(x); return;
+                            }
+                        } 
+                    }
+                    if x.0.ready(&StageOrder[stage]) {
+                        x.0.update(datasheet);
                     }
                 });
                 stage += 1;
