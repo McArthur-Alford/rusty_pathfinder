@@ -1,17 +1,18 @@
-use std::time::Duration;
+use std::{borrow::BorrowMut, time::Duration};
 
-use crate::{data::*, time::{EffectDuration, WorldTime}};
-use specs::{Component, Join, System, VecStorage, WriteStorage, shred::Resource, WorldExt, Read};
+use hecs::World;
+
+use crate::{document::Document, time::{EffectDuration, WorldTime}, data_character::Health};
 
 // EffectComponent Implementation:
 
-pub struct EffectComponent {
+pub struct EffectStorage {
     pub effects: Vec<(Box<dyn Effect + Send + Sync>, EffectDuration)>,
 }
 
-impl EffectComponent {
-    pub fn new() -> EffectComponent {
-        EffectComponent {
+impl EffectStorage {
+    pub fn new() -> EffectStorage {
+        EffectStorage {
             effects: Vec::new(),
         }
     }
@@ -22,67 +23,54 @@ impl EffectComponent {
     }
 }
 
-impl Component for EffectComponent {
-    type Storage = VecStorage<Self>;
-}
-
 // Effect Staging:
 
 pub enum EffectStage {
-    BaseValues,
+    BaseValues, // These overwrite values, disregarding any data that comes before.
     AdditiveModifiers,
     MultiplicativeModifiers,
     Healing,
 }
 
-static StageOrder: &'static [EffectStage] = &[
+static STAGE_ORDER: &'static [EffectStage] = &[
     EffectStage::BaseValues,
     EffectStage::AdditiveModifiers,
     EffectStage::MultiplicativeModifiers,
     EffectStage::Healing,
 ];
 
-pub struct EffectSystem;
-
-impl<'a> System<'a> for EffectSystem {
-    type SystemData = (
-        WriteStorage<'a, DataSheetComponent>,
-        WriteStorage<'a, EffectComponent>,
-        Read<'a, WorldTime>
-    );
-
-    fn run(&mut self, (mut datasheet, mut effects, time): Self::SystemData) {
-        for (datasheet, effects) in (&mut datasheet, &mut effects).join() {
-            let mut stage = 0;
-            while stage < StageOrder.len() {
-                effects.effects.iter_mut().for_each(|x| {
-                    match x.1 {
-                        EffectDuration::Permenant => (),
-                        EffectDuration::Seconds { start, duration } => {
-                            if start + duration < time.passed {
-                                drop(x); return;
-                            }
-                        } 
+pub fn effect_system(world: &mut World, time: &WorldTime) {
+    for (_id, (document, effects)) in world.query_mut::<(&mut Document, &mut EffectStorage)>() {
+        let mut stage = 0;
+        while stage < STAGE_ORDER.len() {
+            effects.effects.iter_mut().for_each(|x| {
+                match x.1 {
+                    EffectDuration::Permenant => (),
+                    EffectDuration::Seconds { start, duration } => {
+                        if start + duration < time.passed {
+                            drop(x);
+                            return;
+                        }
                     }
-                    if x.0.ready(&StageOrder[stage]) {
-                        x.0.update(datasheet);
-                    }
-                });
-                stage += 1;
-            }
+                }
+                if x.0.ready(&STAGE_ORDER[stage]) {
+                    x.0.update(document);
+                }
+            });
+            stage += 1;
         }
     }
 }
 
-// Effect Implementation:
+// // Effect Implementation:
 
 pub trait Effect {
     fn reset(&self) {}
     fn ready(&self, trigger: &EffectStage) -> bool;
-    fn update(&self, datasheet: &mut DataSheetComponent);
+    fn update(&self, datasheet: &mut Document);
 }
 
-// -------- effects ---------
+// // -------- effects ---------
 
 pub struct FastHealing(pub i32);
 
@@ -91,10 +79,25 @@ impl Effect for FastHealing {
         matches!(trigger, EffectStage::Healing)
     }
 
-    fn update(&self, datasheet: &mut DataSheetComponent) {
-        let query = datasheet.query_mut::<Health>();
-        query.for_each(|x| {
-            x.0 += self.0;
-        });
+    fn update(&self, document: &mut Document) {
+        for (id, (health,)) in document.0.query_mut::<(&mut Health,)>() {
+            health.current_health += self.0;
+        }
     }
 }
+
+// pub struct CalculateHealth;
+
+// impl Effect for CalculateHealth {
+//     fn ready(&self, trigger: &EffectStage) -> bool {
+//         matches!(trigger, EffectStage::BaseValues)
+//     }
+
+//     fn update(&self, datasheet: &mut DataSheetComponent) {
+//         // let query2 = datasheet.query::<Constitution>().borrow();
+//         // let query = datasheet.query_mut::<Health>().borrow_mut();
+//         // query.zip(query2).for_each(|(health, con)| {
+//         //     health.max_health = con.0.effective_score as u32 * 2;
+//         // });
+//     }
+// }
