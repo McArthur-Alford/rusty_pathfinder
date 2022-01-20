@@ -33,8 +33,8 @@ fn main() {
 
         effect_system(&mut world, &world_time);
 
-        for (id, (document,)) in &mut world.query::<(&mut Document,)>() {
-            for (id, (health,)) in &mut document.0.query::<(&mut Health,)>() {
+        for (_id, (document,)) in &mut world.query::<(&mut Document,)>() {
+            for (_id, (health,)) in &mut document.0.query::<(&mut Health,)>() {
                 println!("Health Remaining: {:?}", health.current_health);
             }
         }
