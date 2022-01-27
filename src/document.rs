@@ -1,9 +1,20 @@
-use hecs::World;
+// use std::{collections::HashMap, rc::Weak};
 
-pub struct Document(pub World);
+// use hecs::World;
 
-impl Document {
-    pub fn new() -> Document {
-        Document(World::new())
-    }
-}
+// trait Callback {
+//     fn notify(&self);
+// }
+
+// pub struct Document {
+//     pub world: World,
+// }
+
+// impl Document {
+//     pub fn new() -> Document {
+//         Document {
+//             world: World::new(),
+//         }
+//     }
+
+// }
