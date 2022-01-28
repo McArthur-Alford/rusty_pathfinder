@@ -33,14 +33,13 @@ use entity_store::*;
 
 mod entity_store;
 
-struct Action {
-    insertions: Vec<Box<dyn ComponentVec>>
-}
+// struct Action {
+//     insertions: Vec<Box<dyn ComponentVec>>
+// }
 
 fn main() {
     let mut world = EntityStore::new();
-    let entity0 = world.add_entity();
-    world.add_component(entity0, 1);
-    println!("{:?}", world.get_component::<i32>(1));
+    world.set_component::<i32>(0, 1);
+    println!("{:?}", world.get_component::<i32>(0));
 
 }
