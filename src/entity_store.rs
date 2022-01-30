@@ -1,9 +1,6 @@
 use std::{
-    any::{Any, TypeId},
-    collections::{HashMap, HashSet},
+    collections::HashMap,
 };
-
-use hecs::{Component, Entity};
 
 type EntityId = usize;
 
@@ -20,10 +17,14 @@ impl EntityStore {
 
     /// clear_entity
     /// removes all components associated with the given id.
-    pub fn clear_entity(&mut self, entity: EntityId) {
+    pub fn set_entity_none(&mut self, entity: EntityId) {
         for component_map in self.component_maps.iter_mut() {
             component_map.set_none(entity);
         }
+    }
+
+    pub fn clear_entity(&mut self, entity: EntityId) {
+        for component_map in self.component_maps.iter_mut() {}
     }
 
     /// add_component
@@ -117,42 +118,9 @@ impl EntityStore {
     }
 
     pub fn commit(&mut self, action: &mut Action) {
-        self.component_maps
-            .append(&mut action.insertions.component_maps);
-    }
-}
-
-pub struct EntitySet {
-    component_sets: HashMap<TypeId, HashSet<EntityId>>,
-}
-
-impl EntitySet {
-    pub fn new() -> Self {
-        Self {
-            component_sets: HashMap::new(),
-        }
-    }
-
-    pub fn set_component<ComponentType: 'static>(&mut self, entity: EntityId) {
-        for component_set in self.component_sets.iter_mut() {
-            if component_set.0 == &TypeId::of::<ComponentType>() {
-                component_set.1.insert(entity);
-                return;
-            }
-        }
-
-        // No set for this TypeId, create a new one:
-        let mut new_component_set: HashSet<EntityId> = HashSet::new();
-        new_component_set.insert(entity);
-
-        self.component_sets
-            .insert(TypeId::of::<ComponentType>(), new_component_set);
-    }
-
-    pub fn clear_component<ComponentType: 'static>(&mut self, entity: EntityId) {
-        for component_set in self.component_sets.iter_mut() {
-            if component_set.0 == &TypeId::of::<ComponentType>() {
-                component_set.1.remove(&entity);
+        for component_map in self.component_maps.iter_mut() {
+            for action_map in action.insertions.component_maps.iter_mut() {
+                component_map.commit(action_map);
             }
         }
     }
@@ -162,6 +130,7 @@ pub trait ComponentContainer {
     fn as_any(&self) -> &dyn std::any::Any;
     fn as_any_mut(&mut self) -> &mut dyn std::any::Any;
     fn set_none(&mut self, entity: EntityId);
+    fn commit(&mut self, source: &mut Box<dyn ComponentContainer>);
 }
 
 impl<T: 'static> ComponentContainer for HashMap<EntityId, Option<T>> {
@@ -176,19 +145,11 @@ impl<T: 'static> ComponentContainer for HashMap<EntityId, Option<T>> {
     fn set_none(&mut self, entity: EntityId) {
         self.insert(entity, None);
     }
-}
 
-impl ComponentContainer for (HashSet<EntityId>, TypeId) {
-    fn as_any(&self) -> &dyn std::any::Any {
-        self as &dyn std::any::Any
-    }
-
-    fn as_any_mut(&mut self) -> &mut dyn std::any::Any {
-        self as &mut dyn std::any::Any
-    }
-
-    fn set_none(&mut self, entity: EntityId) {
-        self.0.remove(&entity);
+    fn commit(&mut self, source: &mut Box<dyn ComponentContainer>) {
+        if let Some(source) = source.as_any_mut().downcast_mut::<Self>() {
+            self.extend(source.drain());
+        }
     }
 }
 

@@ -50,13 +50,12 @@ mod entity_store;
 
 fn main() {
     let mut world = EntityStore::new();
-    world.set_component::<i32>(0, 1);
-    world.set_component::<i32>(0, 2);
-    world.set_none::<i32>(0);
+    world.set_component::<i32>(0, 3);
     println!("{:?}", world.get_component::<i32>(0));
 
     let mut action = Action::new();
-    action.insertions.set_component::<i32>(0, 3);
+    action.insertions.set_component::<i32>(0, 6);
+    action.insertions.set_none::<i32>(0);
     world.commit(&mut action);
     println!("{:?}", world.get_component::<i32>(0));
 }
