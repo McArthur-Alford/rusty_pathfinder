@@ -80,7 +80,7 @@ fn main() {
     // Output: Some(Vec2F32 { x: 10.0, y: 10.0 })
     // Notice the action hasn't been applied.
 
-    println!("{:?}", get_future_component::<Pos>(0, &mut world, &mut action));
+    println!("{:?}", EntityStore::get_future_component::<Pos>(0, &mut world, &mut action));
     // Output: Some(Vec2F32 { x: 0.0, y: 10.0 })
     // While the action hasn't been applied we can act as if it has by querying the future.
 
