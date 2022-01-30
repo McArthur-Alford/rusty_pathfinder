@@ -54,7 +54,7 @@ impl EntityStore {
         self.component_maps.push(Box::new(new_component_map));
     }
 
-    pub fn clear_component<ComponentType: 'static>(&mut self, entity: EntityId) {
+    pub fn set_none<ComponentType: 'static>(&mut self, entity: EntityId) {
         for component_map in self.component_maps.iter_mut() {
             if let Some(component_map) = component_map
                 .as_any_mut()
@@ -69,13 +69,13 @@ impl EntityStore {
     /// get_component
     /// returns an immutable reference to a component associated with a given id:
     pub fn get_component<ComponentType: 'static>(
-        &mut self,
+        &self,
         entity: EntityId,
     ) -> Option<&ComponentType> {
-        for component_map in self.component_maps.iter_mut() {
+        for component_map in self.component_maps.iter() {
             if let Some(component_map) = component_map
-                .as_any_mut()
-                .downcast_mut::<HashMap<EntityId, Option<ComponentType>>>()
+                .as_any()
+                .downcast_ref::<HashMap<EntityId, Option<ComponentType>>>()
             {
                 return match component_map.get(&entity) {
                     Some(component_map) => component_map.as_ref(),
@@ -87,9 +87,9 @@ impl EntityStore {
     }
 
     pub fn get_map<ComponentType: 'static>(
-        &mut self,
+        &self,
     ) -> Option<&HashMap<EntityId, Option<ComponentType>>> {
-        for component_map in self.component_maps.iter_mut() {
+        for component_map in self.component_maps.iter() {
             if let Some(component_map) = component_map
                 .as_any()
                 .downcast_ref::<HashMap<EntityId, Option<ComponentType>>>()
@@ -101,22 +101,28 @@ impl EntityStore {
         return None;
     }
 
-    pub fn commit(&mut self, action: Action) {
-        self.component_maps.extend(action.insertions.component_maps);
-        for component_set in action.removals.component_sets {
-            for component_map in self.component_maps {
-                let a = component_map.as_any();
-                if a.type_id()
+    pub fn get_map_mut<ComponentType: 'static>(
+        &mut self,
+    ) -> Option<&mut HashMap<EntityId, Option<ComponentType>>> {
+        for component_map in self.component_maps.iter_mut() {
+            if let Some(component_map) = component_map
+                .as_any_mut()
+                .downcast_mut::<HashMap<EntityId, Option<ComponentType>>>()
+            {
+                return Some(component_map);
             }
         }
 
-        let a = Vec::<Option<i32>>::new();
-        let b = Vec::<None>::new();
-        a.extend(b);
+        return None;
+    }
+
+    pub fn commit(&mut self, action: &mut Action) {
+        self.component_maps
+            .append(&mut action.insertions.component_maps);
     }
 }
 
-struct EntitySet {
+pub struct EntitySet {
     component_sets: HashMap<TypeId, HashSet<EntityId>>,
 }
 
@@ -168,7 +174,7 @@ impl<T: 'static> ComponentContainer for HashMap<EntityId, Option<T>> {
     }
 
     fn set_none(&mut self, entity: EntityId) {
-        self.remove(&entity);
+        self.insert(entity, None);
     }
 }
 
@@ -186,7 +192,14 @@ impl ComponentContainer for (HashSet<EntityId>, TypeId) {
     }
 }
 
-struct Action {
+pub struct Action {
     pub insertions: EntityStore,
-    pub removals: EntitySet,
+}
+
+impl Action {
+    pub fn new() -> Self {
+        Self {
+            insertions: EntityStore::new(),
+        }
+    }
 }

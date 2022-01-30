@@ -6,27 +6,38 @@
  * The scheduler passes delta_t to all decorator systems.
  *
  * Turn 1 - Fighter
- * Fighter uses charge action. This composes a move and attack together.
- * The threat range rules check this charge and find the fighter moves through the threat range of a goblin.
- * The rules ask the goblin AI and receive an attackaction against the player.
- * The rules reject the original action and adjust the queue from:
- * Move to Destination -> Attack
- * To:
+ * Fighter uses charge action.
+ *  - Creates a blank action.
+ *  - Passes the action through a move_builder and attack_builder or something.
+ *  - The action describes the final changes to the gamestate.
+ *      = The player is adjacent to the enemy.
+ *      = The result of the attack is applied to the enemy.
+ * The threat range rules check this charge and find the fighter moves through the threat range of a goblin to get there.
+ * The rules ask the goblin ai for intent.
+ *  - A AI player would have functions
+ *  - A human player would have the game briefly pause and wait for input
+ * The goblin AI returns a request for an attack_action coming from the enum of action names/descriptors.
+ * The rule that queries the goblin rejects the original charge action.
+ *  - Creates a move to the point where the player is threatened by the goblin.
+ *  - Creates an attack from the goblin against the player.
+ *  - Creates a move from the threatened tile to the charge location.
+ *  - Creates a new attack against the target.
+ * The new action order looks like this:
  * Move to Threatened Square -> Goblin Attacks Player -> Move to Destination -> Attack
- * Assume everything up to move to destination just happens for the example.
+ * 
+ * Lets assume no other rules are violated. and skip to the goblin attacking the player:
+ * The next action is Attack. This request enum variant stores attackerId, SingleTarget(Id), attackId (reference to attack data on the attacker).
+ * A blank action is created.
+ *  - It is populated with an attack using the data in the enum request.
+ *  - Presumably I have skipped over a roll action, which this would use data from.
+ *  - The action describes the changed gamestate (assuming a hit, the target has less health, etc).
+ * The defender has shield block. The shield block rule detects this feat and that an ActionType: Attack against it being processed.
+ * It queries the defender AI for intent (the player). Assume the player doesn't accept.
  *
- * The next action is Attack. This enum stores attackerId, SingleTarget(Id).
- * It runs through an attack builder enum. This calculates the dice rolls, etc,
- *  and builds the changed gamestate (assuming a hit, the target has less health).
- * The defender has shield block. The shield block rule detects this feat, and an ActionType: Attack against it being processed.
- *  It queries the defender AI for intent. Assuming true, it sets up a new queue, else it accepts the status quo.
+ * The fighter has 1 action so the scheduler keeps calling the fighter on repeat. 
+ * The fighter uses a pass turn action, this action specifically sets the actions remaining to 0.
  *
- * The fighter has 1 action left and uses the pass action.
- * - The pass action reduces the available actions to 0. No rules complain.
- *
- * The game tick finishes the action queue (outside of example scope, assume empty).
- *
- * The scheduler moves to Round 1, Turn 2
+ * The scheduler sees this on the next game tick moves to Round 1, Turn 2
  * ...
  * **/
 use entity_store::*;
@@ -40,6 +51,12 @@ mod entity_store;
 fn main() {
     let mut world = EntityStore::new();
     world.set_component::<i32>(0, 1);
+    world.set_component::<i32>(0, 2);
+    world.set_none::<i32>(0);
     println!("{:?}", world.get_component::<i32>(0));
 
+    let mut action = Action::new();
+    action.insertions.set_component::<i32>(0, 3);
+    world.commit(&mut action);
+    println!("{:?}", world.get_component::<i32>(0));
 }
