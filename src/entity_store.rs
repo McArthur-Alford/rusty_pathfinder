@@ -87,6 +87,8 @@ impl EntityStore {
         None
     }
 
+
+
     pub fn get_map<ComponentType: 'static>(
         &self,
     ) -> Option<&HashMap<EntityId, Option<ComponentType>>> {
@@ -123,6 +125,17 @@ impl EntityStore {
                 component_map.commit(action_map);
             }
         }
+    }
+}
+
+pub fn get_future_component<'a, ComponentType: 'static> (
+    entity: EntityId,
+    entity_store: &'a mut EntityStore,
+    action: &'a mut Action
+) -> Option<&'a ComponentType> {
+    return match action.insertions.get_component::<ComponentType>(entity) {
+        Some(thing) => Some(thing),
+        None => entity_store.get_component::<ComponentType>(entity),
     }
 }
 
