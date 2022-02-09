@@ -1,6 +1,6 @@
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
-type EntityId = usize;
+pub type EntityId = usize;
 
 pub struct EntityStore {
     component_maps: Vec<Box<dyn ComponentContainer>>,
@@ -125,7 +125,7 @@ impl EntityStore {
 
     pub fn get_future_component<'a, ComponentType: 'static>(
         entity: EntityId,
-        entity_store: &'a mut EntityStore,
+        entity_store: &'a EntityStore,
         action: &'a mut Action,
     ) -> Option<&'a ComponentType> {
         return match action.insertions.get_component::<ComponentType>(entity) {
@@ -162,14 +162,29 @@ impl<T: 'static> ComponentContainer for HashMap<EntityId, Option<T>> {
     }
 }
 
+#[derive(PartialEq, Eq, Hash)]
+pub enum ActionTag {
+    Movement
+}
+
 pub struct Action {
     pub insertions: EntityStore,
+    pub tags: HashSet<ActionTag>
 }
 
 impl Action {
     pub fn new() -> Self {
         Self {
             insertions: EntityStore::new(),
+            tags: HashSet::new()
         }
+    }
+
+    pub fn has_tag(&self, tag: ActionTag) -> bool {
+        self.tags.contains(&tag)
+    }
+
+    pub fn give_tag(&mut self, tag: ActionTag) {
+        self.tags.insert(tag);
     }
 }

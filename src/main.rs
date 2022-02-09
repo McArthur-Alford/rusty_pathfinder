@@ -1,3 +1,5 @@
+use std::ops::Add;
+
 /** Sample Combat Rounds:
  *
  * Everyone rolls initiative and gets added to schedule.
@@ -42,13 +44,13 @@
  * **/
 use entity_store::*;
 
+use crate::game::Game;
+
 mod entity_store;
+mod game;
+mod rule;
 
-// struct Action {
-//     insertions: Vec<Box<dyn ComponentVec>>
-// }
-
-#[derive(Debug)]
+#[derive(Debug, Copy, Clone)]
 struct Vec2F32 {
     x: f32,
     y: f32,
@@ -60,33 +62,20 @@ impl Vec2F32 {
     }
 }
 
+impl Add for Vec2F32 {
+    type Output = Vec2F32;
+
+    fn add(self, rhs: Self) -> Self::Output {
+        Vec2F32 {
+            x: self.x + rhs.x,
+            y: self.y + rhs.y
+        }
+    }
+}
+
 type Pos = Vec2F32;
 
 fn main() {
-    let mut world = EntityStore::new();
-    // Create empty world
-
-    world.set_component::<Pos>(0, Pos::new(10.0, 10.0));
-    // Creates a position component type as this is the first time one is used.
-    // Sets the position component of entity 0 to (10.0, 10.0).
-
-    let mut action = Action::new();
-    // Create an empty action.
-
-    action.insertions.set_component::<Pos>(0, Pos::new(0.0, 10.0));
-    // The action now describes a world with x=0.0 for entity 0.
-
-    println!("{:?}", world.get_component::<Pos>(0)); 
-    // Output: Some(Vec2F32 { x: 10.0, y: 10.0 })
-    // Notice the action hasn't been applied.
-
-    println!("{:?}", EntityStore::get_future_component::<Pos>(0, &mut world, &mut action));
-    // Output: Some(Vec2F32 { x: 0.0, y: 10.0 })
-    // While the action hasn't been applied we can act as if it has by querying the future.
-
-    world.commit(&mut action);
-    // Commit the action to the world.
-
-    println!("{:?}", world.get_component::<Pos>(0));
-    // Output: Some(Vec2F32 { x: 0.0, y: 10.0 })
+    let mut game = Game::new();
+    game.start();
 }
